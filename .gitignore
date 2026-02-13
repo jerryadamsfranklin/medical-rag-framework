@@ -13,6 +13,9 @@ env/
 # Data (large files, keep local only)
 data/
 
+# Vector store (FAISS index, generated at runtime)
+vectorstore/
+
 # Logs
 logs/
 
