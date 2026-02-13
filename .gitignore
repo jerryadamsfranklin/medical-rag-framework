@@ -1,3 +1,7 @@
+# Secrets / environment (do not commit)
+.env
+.env.*
+
 # IDE / editor
 .cursor/
 
