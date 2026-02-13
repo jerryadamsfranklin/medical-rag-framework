@@ -6,6 +6,9 @@
 venv/
 env/
 
+# Data (large files, keep local only)
+data/
+
 # Logs
 logs/
 
