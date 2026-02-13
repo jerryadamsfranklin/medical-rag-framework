@@ -5,3 +5,9 @@ env/
 
 # Logs
 logs/
+
+# Build / install
+*.egg-info/
+*.egg
+build/
+dist/
