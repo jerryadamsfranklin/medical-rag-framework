@@ -1,4 +1,23 @@
+# Secrets / environment (do not commit)
+.env
+.env.*
+
+# IDE / editor
+.cursor/
+
 # Virtual environment
 .venv/
 venv/
 env/
+
+# Data (large files, keep local only)
+data/
+
+# Logs
+logs/
+
+# Build / install
+*.egg-info/
+*.egg
+build/
+dist/
