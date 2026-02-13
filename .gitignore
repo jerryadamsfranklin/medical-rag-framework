@@ -1,3 +1,6 @@
+# IDE / editor
+.cursor/
+
 # Virtual environment
 .venv/
 venv/
