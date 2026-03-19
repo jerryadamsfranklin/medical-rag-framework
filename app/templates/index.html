@@ -2,46 +2,540 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
-    <title>🔍 AI Medical Chatbot</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MediRAG — AI Medical Assistant</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
     <style>
-        body { font-family: Arial, sans-serif; margin: 2rem; }
-        .chat-container { max-width: 700px; margin: 0 auto; }
-        .message { margin-bottom: 1rem; padding: 0.75rem; border-radius: 10px; }
-        .user { background-color: #d1e7ff; text-align: right; }
-        .assistant { background-color: #f1f1f1; text-align: left; }
-        form { margin-top: 2rem; }
-        textarea { width: 100%; height: 3rem; padding: 0.5rem; font-size: 1rem; }
-        button { padding: 0.5rem 1rem; font-size: 1rem; margin-top: 0.5rem; }
-        .error { color: red; }
-        .clear-btn { margin-top: 1rem; }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg:           #f0f4f8;
+            --panel:        #ffffff;
+            --sidebar:      #0a2540;
+            --sidebar-alt:  #0d2f52;
+            --accent:       #00a896;
+            --accent-light: #e6f7f5;
+            --accent-dark:  #007f72;
+            --user-bubble:  #0a2540;
+            --bot-bubble:   #ffffff;
+            --border:       #dce3ec;
+            --text:         #1a2e44;
+            --text-muted:   #6b7f94;
+            --error:        #e53935;
+            --error-bg:     #fdecea;
+            --shadow:       0 4px 24px rgba(10,37,64,0.10);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* ── SIDEBAR ── */
+        .sidebar {
+            width: 260px;
+            min-width: 260px;
+            background: var(--sidebar);
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            color: #fff;
+        }
+
+        .sidebar-header {
+            padding: 28px 24px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 4px;
+        }
+
+        .sidebar-logo .cross {
+            width: 32px;
+            height: 32px;
+            background: var(--accent);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .sidebar-logo h2 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+        }
+
+        .sidebar-tagline {
+            font-size: 0.72rem;
+            color: rgba(255,255,255,0.45);
+            margin-top: 2px;
+            letter-spacing: 0.5px;
+        }
+
+        .sidebar-section {
+            padding: 20px 16px 8px;
+            font-size: 0.68rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.35);
+        }
+
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            border-radius: 8px;
+            margin: 2px 8px;
+            font-size: 0.85rem;
+            color: rgba(255,255,255,0.7);
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .sidebar-item:hover { background: rgba(255,255,255,0.07); }
+        .sidebar-item.active { background: var(--accent); color: #fff; font-weight: 500; }
+        .sidebar-item .icon { font-size: 1rem; width: 20px; text-align: center; }
+
+        .sidebar-footer {
+            margin-top: auto;
+            padding: 16px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.3);
+            text-align: center;
+        }
+
+        /* ── MAIN ── */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .topbar {
+            background: var(--panel);
+            border-bottom: 1px solid var(--border);
+            padding: 14px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+        }
+
+        .topbar-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .topbar-subtitle {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            margin-top: 1px;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--accent-light);
+            color: var(--accent-dark);
+            font-size: 0.75rem;
+            font-weight: 500;
+            padding: 5px 12px;
+            border-radius: 20px;
+        }
+
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--accent);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        /* ── CHAT AREA ── */
+        .chat-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 28px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            scroll-behavior: smooth;
+        }
+
+        .chat-area::-webkit-scrollbar { width: 5px; }
+        .chat-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+        /* Empty state */
+        .empty-state {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        .empty-state .big-icon {
+            font-size: 3rem;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            font-size: 1.05rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .empty-state p {
+            font-size: 0.85rem;
+            max-width: 340px;
+            line-height: 1.6;
+        }
+
+        .suggestion-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 8px;
+        }
+
+        .chip {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 6px 14px;
+            font-size: 0.78rem;
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .chip:hover {
+            background: var(--accent-light);
+            border-color: var(--accent);
+            color: var(--accent-dark);
+        }
+
+        /* Message bubbles */
+        .message-row {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+            max-width: 78%;
+        }
+
+        .message-row.user {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+
+        .message-row.assistant {
+            align-self: flex-start;
+        }
+
+        .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .avatar.user-av { background: var(--user-bubble); color: #fff; }
+        .avatar.bot-av  { background: var(--accent); color: #fff; }
+
+        .bubble {
+            padding: 12px 16px;
+            border-radius: 16px;
+            font-size: 0.88rem;
+            line-height: 1.65;
+            box-shadow: var(--shadow);
+        }
+
+        .message-row.user .bubble {
+            background: var(--user-bubble);
+            color: #fff;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message-row.assistant .bubble {
+            background: var(--bot-bubble);
+            color: var(--text);
+            border-bottom-left-radius: 4px;
+            border: 1px solid var(--border);
+        }
+
+        .bubble-label {
+            font-size: 0.68rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+            opacity: 0.6;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Error */
+        .error-banner {
+            background: var(--error-bg);
+            color: var(--error);
+            border: 1px solid #f5c6c6;
+            border-radius: 10px;
+            padding: 10px 16px;
+            font-size: 0.83rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* ── INPUT BAR ── */
+        .input-bar {
+            background: var(--panel);
+            border-top: 1px solid var(--border);
+            padding: 16px 28px;
+            flex-shrink: 0;
+        }
+
+        .input-row {
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+            background: var(--bg);
+            border: 1.5px solid var(--border);
+            border-radius: 14px;
+            padding: 10px 12px 10px 16px;
+            transition: border-color 0.2s;
+        }
+
+        .input-row:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(0,168,150,0.12);
+        }
+
+        .input-row textarea {
+            flex: 1;
+            border: none;
+            background: transparent;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            color: var(--text);
+            resize: none;
+            outline: none;
+            min-height: 24px;
+            max-height: 120px;
+            line-height: 1.5;
+        }
+
+        .input-row textarea::placeholder { color: var(--text-muted); }
+
+        .send-btn {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            border: none;
+            background: var(--accent);
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            flex-shrink: 0;
+            transition: background 0.15s, transform 0.1s;
+        }
+
+        .send-btn:hover { background: var(--accent-dark); }
+        .send-btn:active { transform: scale(0.95); }
+
+        .input-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 8px;
+            padding: 0 4px;
+        }
+
+        .input-hint {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+        }
+
+        .clear-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: all 0.15s;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .clear-btn:hover { background: var(--error-bg); color: var(--error); }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .sidebar { display: none; }
+            .chat-area { padding: 16px; }
+            .input-bar { padding: 12px 16px; }
+            .topbar { padding: 12px 16px; }
+            .message-row { max-width: 92%; }
+        }
     </style>
 </head>
 <body>
-    <div class="chat-container">
-        <h1>🔍 AI Medical Chatbot New Change</h1>
 
-        {% if error %}
-            <p class="error">{{ error }}</p>
-        {% endif %}
-
-        <div id="chat-box">
-            {% for msg in messages %}
-                <div class="message {{ msg.role }}">
-                    <strong>{{ msg.role|capitalize }}:</strong><br />
-                    {{ msg.content | safe | nl2br }}
-                </div>
-            {% endfor %}
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo">
+                <div class="cross">✚</div>
+                <h2>MediRAG</h2>
+            </div>
+            <div class="sidebar-tagline">AI-Powered Medical Assistant</div>
         </div>
 
-        <form method="post" action="{{ url_for('index') }}">
-            <textarea name="prompt" placeholder="Ask a medical question..." required></textarea>
-            <br />
-            <button type="submit">Send</button>
-        </form>
+        <div class="sidebar-item active">
+            <span class="icon">💬</span> Chat Assistant
+        </div>
 
-        <form method="get" action="{{ url_for('clear') }}">
-            <button type="submit" class="clear-btn">Clear Chat</button>
-        </form>
+        <div class="sidebar-footer">
+            For informational use only.<br />Always consult a physician.
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <div class="main">
+
+        <!-- TOP BAR -->
+        <div class="topbar">
+            <div>
+                <div class="topbar-title">Medical Chat Assistant</div>
+                <div class="topbar-subtitle">Ask questions based on your medical knowledge base</div>
+            </div>
+            <div class="status-badge">
+                <span class="status-dot"></span>
+                RAG Model Active
+            </div>
+        </div>
+
+        <!-- CHAT MESSAGES -->
+        <div class="chat-area" id="chat-box">
+
+            {% if error %}
+                <div class="error-banner">⚠️ {{ error }}</div>
+            {% endif %}
+
+            {% if not messages %}
+                <div class="empty-state">
+                    <div class="big-icon">🏥</div>
+                    <h3>How can I help you today?</h3>
+                    <p>Ask any medical question and I'll search the knowledge base to provide a concise, evidence-based answer.</p>
+                    <div class="suggestion-chips">
+                        <span class="chip" onclick="fillPrompt(this)">What are symptoms of diabetes?</span>
+                        <span class="chip" onclick="fillPrompt(this)">How does hypertension affect the heart?</span>
+                        <span class="chip" onclick="fillPrompt(this)">What is the difference between Type 1 and Type 2 diabetes?</span>
+                        <span class="chip" onclick="fillPrompt(this)">Common side effects of antibiotics?</span>
+                    </div>
+                </div>
+            {% else %}
+                {% for msg in messages %}
+                    <div class="message-row {{ msg.role }}">
+                        <div class="avatar {% if msg.role == 'user' %}user-av{% else %}bot-av{% endif %}">
+                            {% if msg.role == 'user' %}👤{% else %}✚{% endif %}
+                        </div>
+                        <div class="bubble">
+                            <div class="bubble-label">{{ msg.role }}</div>
+                            {{ msg.content | safe | nl2br }}
+                        </div>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+        </div>
+
+        <!-- INPUT BAR -->
+        <div class="input-bar">
+            <form method="post" action="{{ url_for('index') }}" id="chat-form">
+                <div class="input-row">
+                    <textarea
+                        name="prompt"
+                        id="prompt-input"
+                        placeholder="Ask a medical question..."
+                        rows="1"
+                        required
+                        onkeydown="handleKey(event)"
+                    ></textarea>
+                    <button type="submit" class="send-btn" title="Send">➤</button>
+                </div>
+            </form>
+            <div class="input-footer">
+                <span class="input-hint">Press <kbd>Enter</kbd> to send · <kbd>Shift+Enter</kbd> for new line</span>
+                <form method="get" action="{{ url_for('clear') }}" style="display:inline;">
+                    <button type="submit" class="clear-btn">🗑 Clear chat</button>
+                </form>
+            </div>
+        </div>
+
     </div>
+
+    <script>
+        // Auto-scroll to bottom on load
+        const chatBox = document.getElementById('chat-box');
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+        // Auto-grow textarea
+        const textarea = document.getElementById('prompt-input');
+        if (textarea) {
+            textarea.addEventListener('input', function () {
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+            });
+        }
+
+        // Enter to submit, Shift+Enter for newline
+        function handleKey(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                document.getElementById('chat-form').submit();
+            }
+        }
+
+        // Fill textarea from suggestion chip
+        function fillPrompt(el) {
+            const ta = document.getElementById('prompt-input');
+            ta.value = el.textContent.trim();
+            ta.focus();
+        }
+    </script>
+
 </body>
 </html>
